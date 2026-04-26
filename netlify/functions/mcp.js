@@ -2,13 +2,14 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import express from "express";
 import serverless from "serverless-http";
-import axios from "axios";
 
 const app = express();
-app.use(express.json());
 const server = new McpServer({ name: "LinkedinBot", version: "1.0.0" });
 
-// THE ID CARD: OpenAI looks for this exact path
+// TEST ROUTE: If you go to https://jfbsmm.netlify.app/ you should see "SERVER ALIVE"
+app.get("/", (req, res) => res.send("SERVER ALIVE"));
+
+// IDENTITY CARD: This fixes the "Does not implement OAuth" error
 app.get("/.well-known/oauth-authorization-server/mcp", (req, res) => {
   res.json({
     issuer: "https://jfbsmm.netlify.app",
@@ -20,12 +21,6 @@ app.get("/.well-known/oauth-authorization-server/mcp", (req, res) => {
   });
 });
 
-server.tool("get_linkedin_userinfo", "Verify Connection", {}, async (_args, extra) => {
-  const token = extra.headers?.authorization;
-  const res = await axios.get("https://api.linkedin.com/v2/userinfo", { headers: { Authorization: token } });
-  return { content: [{ type: "text", text: JSON.stringify(res.data) }] };
-});
-
 let transport;
 app.get("/sse", (req, res) => {
   transport = new SSEServerTransport("/message", res);
@@ -34,4 +29,5 @@ app.get("/sse", (req, res) => {
 app.post("/message", (req, res) => {
   if (transport) transport.handlePostMessage(req, res);
 });
+
 export const handler = serverless(app);
