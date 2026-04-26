@@ -2,13 +2,16 @@
   from = "/sse"
   to = "/.netlify/functions/mcp"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/message"
   to = "/.netlify/functions/mcp"
   status = 200
+  force = true
 
 [[redirects]]
-  from = "/auth/callback"
+  from = "/.well-known/oauth-protected-resource"
   to = "/.netlify/functions/mcp"
   status = 200
+  force = true
