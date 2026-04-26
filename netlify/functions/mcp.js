@@ -7,30 +7,27 @@ import axios from "axios";
 const app = express();
 app.use(express.json());
 
-const server = new McpServer({
-  name: "LinkedinBot",
-  version: "1.0.0"
-});
+const server = new McpServer({ name: "LinkedinBot", version: "1.0.0" });
 
-// FIX: This tells the Agent "Yes, I support OAuth"
+// The AI Agent calls this to verify you support OAuth
 app.get("/.well-known/oauth-protected-resource", (req, res) => {
   res.json({
-    authorizations: ["https://www.linkedin.com/oauth/v2/authorization"],
-    tokens: ["https://www.linkedin.com/oauth/v2/accessToken"]
+    resource: "https://jfbsmm.netlify.app",
+    authorization_servers: ["https://www.linkedin.com/oauth/v2/authorization"],
+    scopes_supported: ["openid", "profile", "email", "w_member_social"]
   });
 });
 
-// TOOL: Check connection
+// Tool 1: Get User Info
 server.tool("get_linkedin_userinfo", "Check LinkedIn Connection", {}, async (_args, extra) => {
   const token = extra.headers?.authorization;
-  const res = await axios.get("https://api.linkedin.com/v2/userinfo", {
-    headers: { Authorization: token }
-  });
+  const res = await axios.get("https://api.linkedin.com/v2/userinfo", { headers: { Authorization: token } });
   return { content: [{ type: "text", text: JSON.stringify(res.data) }] };
 });
 
-// TOOL: Post to LinkedIn
-server.tool("publish_to_linkedin", "Post to LinkedIn", { text: { type: "string" }, imageUrl: { type: "string" } }, 
+// Tool 2: Publish Post
+server.tool("publish_to_linkedin", "Post text and image to LinkedIn", 
+{ text: { type: "string" }, imageUrl: { type: "string" } }, 
 async ({ text, imageUrl }, extra) => {
   const token = extra.headers?.authorization;
   const user = await axios.get("https://api.linkedin.com/v2/userinfo", { headers: { Authorization: token } });
@@ -46,10 +43,10 @@ async ({ text, imageUrl }, extra) => {
 
   await axios.post('https://api.linkedin.com/rest/posts', {
     author: author, commentary: text, visibility: "PUBLIC", 
-    content: { media: { title: "Update", id: imageUrn } }, lifecycleState: "PUBLISHED"
+    content: { media: { id: imageUrn } }, lifecycleState: "PUBLISHED"
   }, { headers: { 'Authorization': token, 'Linkedin-Version': '202604', 'X-Restli-Protocol-Version': '2.0.0' } });
 
-  return { content: [{ type: "text", text: "Done." }] };
+  return { content: [{ type: "text", text: "Successfully posted." }] };
 });
 
 let transport;
