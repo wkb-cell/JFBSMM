@@ -1,30 +1,37 @@
-// netlify/functions/mcp.js
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import axios from 'axios';
-
-const server = new McpServer({ name: "LinkedInAuto", version: "1.0.0" });
-
 server.addTool({
   name: "publish_to_linkedin",
-  description: "Immediately publishes a post with an image to LinkedIn.",
+  description: "Publishes text and image to LinkedIn using the 2026 Posts API.",
   schema: {
     type: "object",
     properties: {
       text: { type: "string" },
-      imageUrl: { type: "string" }
-    },
-    required: ["text", "imageUrl"]
+      imageUrn: { type: "string" } // We will get this from the upload tool
+    }
   },
-  handler: async ({ text, imageUrl }) => {
-    // 1. Upload image to LinkedIn and get an Asset URN
-    // 2. Create the post using the Posts API
-    // (Actual API calls use process.env.LINKEDIN_ACCESS_TOKEN)
-    return { result: "Post published successfully to LinkedIn!" };
+  handler: async ({ text, imageUrn }) => {
+    const response = await axios.post('https://api.linkedin.com/rest/posts', {
+      author: process.env.LINKEDIN_PERSON_ID,
+      commentary: text,
+      visibility: "PUBLIC",
+      distribution: {
+        feedDistribution: "MAIN_FEED",
+        targetEntities: [],
+        thirdPartyDistributionChannels: []
+      },
+      content: {
+        media: {
+          title: "Daily AI Update",
+          id: imageUrn
+        }
+      },
+      lifecycleState: "PUBLISHED"
+    }, {
+      headers: {
+        'Authorization': `Bearer ${process.env.LINKEDIN_ACCESS_TOKEN}`,
+        'Linkedin-Version': '202604',
+        'X-Restli-Protocol-Version': '2.0.0'
+      }
+    });
+    return { result: "Post Live!" };
   }
 });
-
-export const handler = async (req) => {
-  const transport = new StreamableHTTPServerTransport({ req, res: {} });
-  return server.handle(transport);
-};
