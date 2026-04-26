@@ -1,11 +1,12 @@
 {
-  "name": "linkedin-mcp-server",
+  "name": "linkedin-mcp-final",
   "version": "1.1.0",
   "type": "module",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.1",
+    "@modelcontextprotocol/sdk": "1.0.1",
     "axios": "^1.6.0",
     "express": "^4.18.2",
-    "serverless-http": "^3.2.0"
+    "serverless-http": "^3.2.0",
+    "cors": "^2.8.5"
   }
 }
