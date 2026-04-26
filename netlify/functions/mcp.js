@@ -3,15 +3,11 @@ import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import express from "express";
 import serverless from "serverless-http";
 import axios from "axios";
-import cors from "cors";
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+const server = new McpServer({ name: "LinkedinBot", version: "1.0.0" });
 
-const server = new McpServer({ name: "LinkedinBot", version: "1.1.0" });
-
-// IDENTITY CARD: Fixes "Does not implement OAuth"
+// Discovery path for the Agent
 app.get("/.well-known/oauth-authorization-server/mcp", (req, res) => {
   res.json({
     issuer: "https://jfbsmm.netlify.app",
@@ -23,13 +19,14 @@ app.get("/.well-known/oauth-authorization-server/mcp", (req, res) => {
   });
 });
 
-// TOOL: Check connection
+// Tool definition
 server.tool("get_linkedin_userinfo", "Check LinkedIn Connection", {}, async (_args, extra) => {
   const token = extra.headers?.authorization;
   const res = await axios.get("https://api.linkedin.com/v2/userinfo", { headers: { Authorization: token } });
   return { content: [{ type: "text", text: JSON.stringify(res.data) }] };
 });
 
+// Handshake paths
 let transport;
 app.get("/sse", (req, res) => {
   transport = new SSEServerTransport("/message", res);
