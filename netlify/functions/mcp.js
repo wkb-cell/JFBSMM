@@ -2,14 +2,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import express from "express";
 import serverless from "serverless-http";
+import axios from "axios";
+import cors from "cors";
 
 const app = express();
-const server = new McpServer({ name: "LinkedinBot", version: "1.0.0" });
+app.use(cors());
+app.use(express.json());
 
-// TEST ROUTE: If you go to https://jfbsmm.netlify.app/ you should see "SERVER ALIVE"
-app.get("/", (req, res) => res.send("SERVER ALIVE"));
+const server = new McpServer({ name: "LinkedinBot", version: "1.1.0" });
 
-// IDENTITY CARD: This fixes the "Does not implement OAuth" error
+// IDENTITY CARD: Fixes "Does not implement OAuth"
 app.get("/.well-known/oauth-authorization-server/mcp", (req, res) => {
   res.json({
     issuer: "https://jfbsmm.netlify.app",
@@ -19,6 +21,13 @@ app.get("/.well-known/oauth-authorization-server/mcp", (req, res) => {
     grant_types_supported: ["authorization_code"],
     scopes_supported: ["openid", "profile", "email", "w_member_social"]
   });
+});
+
+// TOOL: Check connection
+server.tool("get_linkedin_userinfo", "Check LinkedIn Connection", {}, async (_args, extra) => {
+  const token = extra.headers?.authorization;
+  const res = await axios.get("https://api.linkedin.com/v2/userinfo", { headers: { Authorization: token } });
+  return { content: [{ type: "text", text: JSON.stringify(res.data) }] };
 });
 
 let transport;
